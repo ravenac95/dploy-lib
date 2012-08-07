@@ -1,6 +1,6 @@
 import zmq
 from mock import patch, Mock
-from nose.tools import eq_
+from nose.tools import eq_, raises
 from dploylib.transport.wrapper import *
 
 
@@ -38,22 +38,37 @@ class TestSocket(object):
         self.socket = Socket(self.mock_zmq_socket,
                 context=self.mock_zmq_context)
 
+    @patch('dploylib.transport.wrapper.get_zmq_constant')
+    def test_socket_set_option_better(self, mock_get_zmq_constant):
+        # Setup
+        mock_expected_option = mock_get_zmq_constant.return_value
+        option = 'option'
+        value = 'value'
+
+        # Test
+        self.socket.set_option(option, value)
+
+        # Assertions
+        mock_get_zmq_constant.assert_called_with(option)
+        self.mock_zmq_socket.setsockopt.assert_called_with(
+                mock_expected_option, value)
+
     def test_socket_set_option(self):
         tests = [
             ['hwm', 0, zmq.HWM],
             ['swap', 1, zmq.SWAP],
             ['affinity', 2, zmq.AFFINITY],
             ['identity', 3, zmq.IDENTITY],
-            ['subscribe', 'a', zmq.SUBSCRIBE],
-            ['unsubscribe', 'b', zmq.UNSUBSCRIBE],
+            ['subscribe', u'a', zmq.SUBSCRIBE],
+            ['unsubscribe', u'b', zmq.UNSUBSCRIBE],
         ]
-        for option, value, expected_option in tests:
-            yield self.do_set_option, option, value, expected_option
+        for option, value, expected_opt in tests:
+            yield self.do_set_option, option, value, expected_opt
 
-    def do_set_option(self, option, value, expected_option):
+    def do_set_option(self, option, value, expected_opt):
         self.socket.set_option(option, value)
 
-        self.mock_zmq_socket.setsockopt.assert_called_with(expected_option,
+        self.mock_zmq_socket.setsockopt.assert_called_with(expected_opt,
                 value)
 
     def test_bind(self):
@@ -125,3 +140,30 @@ class TestSocket(object):
         text = self.socket.receive_text()
 
         eq_(text, mock_envelope.data)
+
+
+def test_get_zmq_constant():
+    # Just test a bunch of expected values
+    tests = [
+        ['pub', zmq.PUB],
+        ['sub', zmq.SUB],
+        ['rep', zmq.REP],
+        ['req', zmq.REQ],
+        ['router', zmq.ROUTER],
+        ['dealer', zmq.DEALER],
+        ['pull', zmq.PULL],
+        ['push', zmq.PUSH],
+        ['subscribe', zmq.SUBSCRIBE],
+    ]
+    for name, expected in tests:
+        yield do_get_zmq_constant, name, expected
+
+
+def do_get_zmq_constant(name, expected):
+    constant = get_zmq_constant(name)
+    eq_(constant, expected)
+
+
+@raises(AttributeError)
+def test_get_zmq_constant_fails():
+    get_zmq_constant('thisissomekindofrandomnamethatwontbethere')

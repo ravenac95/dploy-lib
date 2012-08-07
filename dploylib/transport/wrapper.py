@@ -4,7 +4,6 @@ from .envelope import Envelope
 
 TEXT_MIMETYPE = 'text/plain'
 
-
 _SOCKET_TYPE_MAP = {
     'pull': zmq.PULL,
     'push': zmq.PUSH,
@@ -25,6 +24,18 @@ _SOCKET_OPTION_MAP = {
     'subscribe': zmq.SUBSCRIBE,
     'unsubscribe': zmq.UNSUBSCRIBE,
 }
+
+
+def clean_option_value(value):
+    if isinstance(value, (str, int)):
+        return value
+    elif isinstance(value, (unicode)):
+        return value.encode('utf-8')
+    raise ValueError('Option must be str, int, or unicode')
+
+
+def get_zmq_constant(name):
+    return getattr(zmq, name.upper())
 
 
 class Context(object):
@@ -48,11 +59,7 @@ class Socket(object):
     @classmethod
     def new(cls, socket_type, context=None):
         context = context or Context.new()
-        try:
-            zmq_socket_type = _SOCKET_TYPE_MAP[socket_type.lower()]
-        except KeyError:
-            raise AttributeError('"%s" is an invalid socket_type name' %
-                    socket_type)
+        zmq_socket_type = get_zmq_constant(socket_type)
         socket = context.socket(zmq_socket_type)
         return cls(socket, context)
 
@@ -69,8 +76,9 @@ class Socket(object):
         return self._socket
 
     def set_option(self, option, value):
-        socket_option = _SOCKET_OPTION_MAP[option]
-        self._socket.setsockopt(socket_option, value)
+        socket_option = get_zmq_constant(option)
+        cleaned_option = clean_option_value(value)
+        self._socket.setsockopt(socket_option, cleaned_option)
 
     def bind(self, uri):
         self._socket.bind(uri)
