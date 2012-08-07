@@ -1,5 +1,6 @@
 import zmq
 import json
+from .envelope import Envelope
 
 TEXT_MIMETYPE = 'text/plain'
 
@@ -24,10 +25,6 @@ _SOCKET_OPTION_MAP = {
     'subscribe': zmq.SUBSCRIBE,
     'unsubscribe': zmq.UNSUBSCRIBE,
 }
-
-
-class Envelope(object):
-    pass
 
 
 class Context(object):
