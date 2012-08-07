@@ -1,0 +1,12 @@
+requirements:
+  - pyzmq
+  - requests
+
+---
+profile: development
+
+requirements:
+  - nose
+  - Sphinx
+  - mock
+  - testkit

@@ -48,7 +48,7 @@ class ThreadedServerCoordinator(object):
     pass
 
 
-class Service(object):
+class BaseService(object):
     """Controls a set of servers to provide a service over the network"""
     @classmethod
     def setup(cls, logger, settings, coordinator_cls=None):
@@ -86,6 +86,12 @@ class Service(object):
                     'threads')
             coordinator.stop()
             logger.info('Shutdown complete.')
+
+
+class Service(BaseService):
+    """Uses a SettingsMap to configure it's child servers"""
+    def setup_server_settings(self):
+        pass
 
 
 class PollLoop(object):
