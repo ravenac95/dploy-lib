@@ -51,4 +51,3 @@ Now the REQ server::
         main()
 
 All of zeromq's socket types are available.
-        
