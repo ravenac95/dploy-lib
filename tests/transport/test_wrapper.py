@@ -1,5 +1,6 @@
-from mock import patch, Mock
 import zmq
+from mock import patch, Mock
+from nose.tools import eq_
 from dploylib.transport.wrapper import *
 
 
@@ -9,7 +10,7 @@ def test_context_created_correctly(mock_zmq_context_cls):
 
     mock_zmq_context_cls.assert_called_with()
 
-    assert isinstance(context, Context) == True
+    eq_(isinstance(context, Context), True)
 
 
 @patch('dploylib.transport.wrapper.Socket')
@@ -26,7 +27,7 @@ def test_socket_created_correctly(mock_context_cls):
     mock_context = mock_context_cls.new.return_value
     mock_context.socket.assert_called_with(zmq.PUB)
 
-    assert isinstance(socket, Socket) == True
+    eq_(isinstance(socket, Socket), True)
 
 
 class TestSocket(object):
@@ -110,7 +111,7 @@ class TestSocket(object):
 
         mock_envelope = mock_recv_envelope.return_value
         mock_handler.assert_called_with(mock_envelope)
-        assert obj == mock_handler.return_value
+        eq_(obj, mock_handler.return_value)
 
     @patch('dploylib.transport.wrapper.Envelope')
     def test_receive_envelope(self, mock_envelope_cls):
@@ -123,4 +124,4 @@ class TestSocket(object):
         mock_envelope.mimetype = TEXT_MIMETYPE
         text = self.socket.receive_text()
 
-        assert text == mock_envelope.data
+        eq_(text, mock_envelope.data)
