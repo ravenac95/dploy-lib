@@ -7,6 +7,7 @@ from dploylib.transport.poll import *
 def test_initialize_poll_loop():
     PollLoop.new()
 
+
 class TestPollLoop(object):
     def setup(self):
         self.mock_zmq_poller = Mock()
