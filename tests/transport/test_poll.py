@@ -78,7 +78,7 @@ class TestPollLoopWithRegistrations(object):
         self.mock_handler2.assert_called_with(self.mock_socket2)
 
     def test_poll_both(self):
-        self.set_poll_return([1,2])
+        self.set_poll_return([1, 2])
 
         self.poll_loop.poll()
 
