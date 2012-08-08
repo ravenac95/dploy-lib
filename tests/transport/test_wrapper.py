@@ -15,9 +15,10 @@ def test_context_created_correctly(mock_zmq_context_cls):
 
 @patch('dploylib.transport.wrapper.Socket')
 def test_context_creates_socket(mock_socket_cls):
-    context = Context(None)
+    mock_zmq_context = Mock()
+    context = Context(mock_zmq_context)
     context.socket('pub')
-    mock_socket_cls.new.assert_called_with('pub', context=context)
+    mock_zmq_context.socket.assert_called_with(zmq.PUB)
 
 
 @patch('dploylib.transport.wrapper.Context')
@@ -25,9 +26,9 @@ def test_socket_created_correctly(mock_context_cls):
     socket = Socket.new('pub')
 
     mock_context = mock_context_cls.new.return_value
-    mock_context.socket.assert_called_with(zmq.PUB)
+    mock_context.socket.assert_called_wth('pub')
 
-    eq_(isinstance(socket, Socket), True)
+    eq_(socket, mock_context.socket.return_value)
 
 
 class TestSocket(object):
@@ -36,7 +37,7 @@ class TestSocket(object):
         self.mock_zmq_context = Mock()
 
         self.socket = Socket(self.mock_zmq_socket,
-                context=self.mock_zmq_context)
+                zmq_context=self.mock_zmq_context)
 
     @patch('dploylib.transport.wrapper.get_zmq_constant')
     def test_socket_set_option_better(self, mock_get_zmq_constant):
@@ -105,7 +106,8 @@ class TestSocket(object):
     def test_send_envelope(self):
         mock_envelope = Mock()
         self.socket.send_envelope(mock_envelope)
-        self.mock_zmq_socket.send_multipart(mock_envelope)
+        self.mock_zmq_socket.send_multipart.assert_called_with(
+                mock_envelope.transfer_object.return_value)
 
     @patch('dploylib.transport.wrapper.Envelope')
     def test_send_text(self, mock_envelope_cls):
@@ -118,14 +120,17 @@ class TestSocket(object):
         mock_envelope = mock_envelope_cls.new.return_value
         mock_send_envelope.assert_called_with(mock_envelope)
 
-    def test_receive_obj(self):
+    @patch('json.loads')
+    def test_receive_obj(self, mock_loads):
         mock_handler = Mock()
         mock_recv_envelope = self.socket.receive_envelope = Mock()
 
         obj = self.socket.receive_obj(mock_handler)
 
         mock_envelope = mock_recv_envelope.return_value
-        mock_handler.assert_called_with(mock_envelope)
+        mock_loads.assert_called_with(mock_envelope.data)
+        mock_json_str = mock_loads.return_value
+        mock_handler.assert_called_with(mock_json_str)
         eq_(obj, mock_handler.return_value)
 
     @patch('dploylib.transport.wrapper.Envelope')
@@ -166,4 +171,5 @@ def do_get_zmq_constant(name, expected):
 
 @raises(AttributeError)
 def test_get_zmq_constant_fails():
+    get_zmq_constant('thisissomekindofrandomnamethatwontbethere')
     get_zmq_constant('thisissomekindofrandomnamethatwontbethere')

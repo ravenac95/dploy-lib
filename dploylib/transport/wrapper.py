@@ -48,43 +48,75 @@ class Context(object):
     def from_raw_context(cls, context):
         return cls(context)
 
-    def __init__(self, context):
-        self._context = context
+    def __init__(self, zmq_context):
+        self._zmq_context = zmq_context
 
     def socket(self, socket_type):
-        return Socket.new(socket_type, context=self)
+        zmq_socket_type = get_zmq_constant(socket_type)
+        zmq_socket = self._zmq_context.socket(zmq_socket_type)
+        return Socket(zmq_socket, self)
 
 
 class Socket(object):
     @classmethod
     def new(cls, socket_type, context=None):
         context = context or Context.new()
-        zmq_socket_type = get_zmq_constant(socket_type)
-        socket = context.socket(zmq_socket_type)
-        return cls(socket, context)
+        socket = context.socket(socket_type)
+        return socket
 
-    def __init__(self, socket, context):
-        self._socket = socket
-        self._context = context
+    @classmethod
+    def connect_new(cls, socket_type, uri, options=None, context=None):
+        """Create and connect a new socket"""
+        socket = cls.new(socket_type, context=context)
+        options = options or []
+        for option, value in options:
+            socket.set_option(option, value)
+        socket.connect(uri)
+        return socket
+
+    @classmethod
+    def bind_new(cls, socket_type, uri, options=None, context=None):
+        socket = cls.new(socket_type, context=context)
+        options = options or []
+        for option, value in options:
+            socket.setup_option(option, value)
+        socket.bind(uri)
+        return socket
+
+    def __init__(self, zmq_socket, zmq_context):
+        self._zmq_socket = zmq_socket
+        self._zmq_context = zmq_context
 
     @property
     def zmq_context(self):
-        return self._context
+        return self._zmq_context
 
     @property
     def zmq_socket(self):
-        return self._socket
+        return self._zmq_socket
 
     def set_option(self, option, value):
         socket_option = get_zmq_constant(option)
         cleaned_option = clean_option_value(value)
-        self._socket.setsockopt(socket_option, cleaned_option)
+        self.zmq_socket.setsockopt(socket_option, cleaned_option)
 
     def bind(self, uri):
-        self._socket.bind(uri)
+        self.zmq_socket.bind(uri)
+
+    def bind_to_random(self, uri, min_port=None, max_port=None,
+            max_tries=None):
+        kwargs = {}
+        if min_port:
+            kwargs['min_port'] = min_port
+        if max_port:
+            kwargs['max_port'] = max_port
+        if max_tries:
+            kwargs['max_tries'] = max_tries
+        port = self.zmq_socket.bind_to_random_port(uri, **kwargs)
+        return port
 
     def connect(self, uri):
-        self._socket.connect(uri)
+        self.zmq_socket.connect(uri)
 
     def send_obj(self, obj, id=''):
         """Sends encoded an object as encoded data.
@@ -107,8 +139,8 @@ class Socket(object):
 
     def send_envelope(self, envelope):
         """Send an envelope"""
-        multipart_object = envelope.transport_object()
-        self._socket.send_multipart(multipart_object)
+        multipart_object = envelope.transfer_object()
+        self.zmq_socket.send_multipart(multipart_object)
 
     def receive_obj(self, handler):
         """Receives an envelope and calls an object to handle the envelope data
@@ -116,7 +148,8 @@ class Socket(object):
         The handler must be callable
         """
         envelope = self.receive_envelope()
-        return handler(envelope)
+        obj_data = json.loads(envelope.data)
+        return handler(obj_data)
 
     def receive_text(self):
         """Convenience handler to receive plain text"""
@@ -129,5 +162,5 @@ class Socket(object):
 
     def receive_envelope(self):
         """Receive an envelope"""
-        raw_envelope = self._socket.recv_multipart()
+        raw_envelope = self.zmq_socket.recv_multipart()
         return Envelope.from_raw(raw_envelope)
