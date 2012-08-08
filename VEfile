@@ -10,3 +10,4 @@ requirements:
   - Sphinx
   - mock
   - testkit
+  - ipython
