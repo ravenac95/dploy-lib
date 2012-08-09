@@ -12,7 +12,7 @@ class Service(object):
         self._extends = extends or []
         self._server_classes = {}
         self._config_mapper = config_mapper or ConfigMapper()
-        self._coodinator = coordinator or ThreadedServerCoordinator()
+        self._coordinator = coordinator or ThreadedServerCoordinator()
 
     def add_server(self, name, server_cls):
         self._server_classes[name] = server_cls
@@ -28,5 +28,3 @@ class Service(object):
 
         server_names = server_classes.keys()
         config_mapper.process(config, servers=server_names)
-
-

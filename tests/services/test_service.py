@@ -38,3 +38,4 @@ class TestBasicService(object):
         self.service.start(fake_config)
 
         self.mock_config_mapper.process.assert_called_with(fake_config, servers=['test'])
+        self.mock_coordinator
