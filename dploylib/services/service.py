@@ -1,14 +1,10 @@
 import logging
 from .utils import ServerConfig
 from .coordinator import *
+from .config import *
 
 
 logger = logging.getLogger('dploylib.services.service')
-
-
-class YAMLConfigMapper(object):
-    def process(self):
-        return {}
 
 
 class Service(object):
