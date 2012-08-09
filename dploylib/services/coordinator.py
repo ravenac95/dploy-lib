@@ -11,15 +11,9 @@ class ServerCoordinatorFailing(Exception):
     pass
 
 
-def start_server(server, name, server_settings, control_uri, **kwargs):
-    new_server = server.new(name, server_settings)
-    new_server.start()
-
-
 class ServerCoordinator(object):
     # This must be compatible with threading.Thread
     spawner = None
-    start_server = start_server
     logger = logger
 
     def __init__(self, control_uri='inproc://control', context=None):
@@ -32,7 +26,7 @@ class ServerCoordinator(object):
     def context(self):
         context = self._context
         if not context:
-            self._context = Context.new()
+            context = self._context = Context.new()
         return context
 
     def setup_servers(self, server_config, settings):
@@ -61,9 +55,11 @@ class ServerCoordinator(object):
 
     def spawn(self, server, name, server_settings, **kwargs):
         """Spawn a server and return reference to the spawn"""
-        return self.spawner(target=self.start_server,
+        spawn = self.spawner(target=self.start_server,
                 args=(server, name, server_settings, self._control_uri),
                 kwargs=kwargs)
+        spawn.start()
+        return spawn
 
     def server_context(self, name, server):
         """Creates and returns a context for the current server
@@ -82,6 +78,11 @@ class ServerCoordinator(object):
     def stop(self):
         """Stop the spawned servers"""
         raise NotImplementedError('"stop" method must do something')
+
+    def start_server(self, server, name, server_settings, control_uri,
+            **kwargs):
+        new_server = server.new(name, server_settings, control_uri, **kwargs)
+        new_server.start()
 
 
 class ThreadedServerCoordinator(ServerCoordinator):
@@ -113,8 +114,8 @@ class ThreadedServerCoordinator(ServerCoordinator):
             control_socket.send_text(constants.COORDINATOR_SHUTDOWN)
             for name, thread in self._spawns:
                 thread.join(0.5)
-            remaining = threading.active_count() - self._starting_thread_count
-            if starting_thread_count > 0:
+            remaining = threading.active_count() - starting_thread_count
+            if remaining <= 0:
                 # All threads are done
                 logger.debug('Still waiting for %d thread(s)' % remaining)
                 break

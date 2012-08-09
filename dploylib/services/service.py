@@ -39,7 +39,7 @@ class Service(object):
         server_config = self.server_config
 
         server_names = server_config.names()
-        self.logger.debug('Starting service with %d servers' %
+        self.logger.debug('Starting service with %d servers.' %
                 len(server_names))
         settings = config_mapper.process(config_data, servers=server_names)
         coordinator.setup_servers(server_config, settings)
@@ -54,3 +54,4 @@ class Service(object):
 
     def stop(self):
         self._coordinator.stop()
+        self.logger.debug('Service stopped.')

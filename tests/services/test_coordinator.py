@@ -48,10 +48,12 @@ class TestFakeServerCoordinator(GenericServerCoordinatorTest):
                     self.fake_control_uri),
                 kwargs=dict(context=self.mock_context),
             ),
+            call().start(),
             call(target=coordinator.start_server,
                 args=(self.mock_server2, 'server2', mock_server_settings,
                     self.fake_control_uri),
                 kwargs=dict(context=self.mock_context),
             ),
+            call().start()
         ])
         coordinator.start_control_socket.assert_called_with()

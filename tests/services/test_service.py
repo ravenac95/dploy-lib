@@ -5,6 +5,7 @@ tests.services.test_service
 Tests services.
 """
 from mock import Mock, MagicMock
+from nose.plugins.attrib import attr
 from dploylib.services.service import Service
 
 
