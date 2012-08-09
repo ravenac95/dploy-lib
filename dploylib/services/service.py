@@ -1,46 +1,34 @@
+from .utils import ServerConfig
+
+
 class ThreadedServerCoordinator(object):
     pass
 
 
-class ConfigMapper(object):
+class YAMLConfigMapper(object):
     pass
-
-
-class ServerConfig(object):
-    def __init__(self):
-        self._servers = {}
-
-    def apply_blueprints(self, blueprints):
-        """Apply's the blueprints and verify the settings"""
-        pass
-
-    def __getitem__(self, name):
-        return self._servers[name]
-
-    def __setitem__(self, name, server):
-        self._servers[name] = server
 
 
 class Service(object):
     """A facade to a DployService"""
     def __init__(self, extends=None, config_mapper=None, coordinator=None):
-        self._blueprints = extends or []
+        self._templates = extends or []
         self._server_config = ServerConfig()
         self._configuration_locked = False
-        self._config_mapper = config_mapper or ConfigMapper()
+        self._config_mapper = config_mapper or YAMLConfigMapper()
         self._coordinator = coordinator or ThreadedServerCoordinator()
 
     def add_server(self, name, server_cls):
         self._server_config[name] = server_cls
 
-    def _apply_blueprints(self):
-        self._server_config.apply_blueprints(self._blueprints)
+    def _apply_templates(self):
+        self._server_config.apply_templates(self._templates)
         self._configuration_locked = True
 
     @property
     def server_config(self):
         if not self._configuration_locked:
-            self._apply_blueprints()
+            self._apply_templates()
             return self._server_config
         return self._server_config
 

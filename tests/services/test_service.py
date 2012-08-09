@@ -9,24 +9,24 @@ from dploylib.services.service import Service
 
 
 def test_initialize_service():
-    mock_blueprint = Mock()
+    mock_template = Mock()
     mock_server = Mock()
     mock_config_mapper = Mock()
 
-    service = Service(extends=[mock_blueprint],
+    service = Service(extends=[mock_template],
             config_mapper=mock_config_mapper)
     service.add_server('test', mock_server)
 
 
 class TestBasicService(object):
     def setup(self):
-        self.mock_blueprint = Mock()
-        self.mock_blueprints = [self.mock_blueprint]
+        self.mock_template = Mock()
+        self.mock_templates = [self.mock_template]
         self.mock_server = Mock()
         self.mock_config_mapper = Mock()
         self.mock_coordinator = Mock()
 
-        service = Service(extends=[self.mock_blueprint],
+        service = Service(extends=[self.mock_template],
                 config_mapper=self.mock_config_mapper,
                 coordinator=self.mock_coordinator)
         service.add_server('test', self.mock_server)
@@ -42,8 +42,8 @@ class TestBasicService(object):
         mock_server_config = self.service._server_config = Mock()
         self.service.start(fake_config)
 
-        mock_server_config.apply_blueprints.assert_called_with(
-                self.mock_blueprints)
+        mock_server_config.apply_templates.assert_called_with(
+                self.mock_templates)
 
         self.mock_config_mapper.process.assert_called_with(fake_config,
                 servers=mock_server_config.names.return_value)
