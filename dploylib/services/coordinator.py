@@ -117,5 +117,6 @@ class ThreadedServerCoordinator(ServerCoordinator):
             remaining = threading.active_count() - starting_thread_count
             if remaining <= 0:
                 # All threads are done
-                logger.debug('Still waiting for %d thread(s)' % remaining)
                 break
+            else:
+                logger.debug('Still waiting for %d thread(s)' % remaining)
