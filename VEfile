@@ -1,6 +1,7 @@
 requirements:
   - pyzmq
   - requests
+  - pyyaml
 
 ---
 profile: development
