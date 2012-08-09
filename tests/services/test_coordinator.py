@@ -1,4 +1,4 @@
-from mock import Mock, call, ANY
+from mock import Mock, call
 from dploylib.services.coordinator import *
 
 
@@ -24,16 +24,16 @@ class GenericServerCoordinatorTest(object):
                 self.mock_settings)
 
 
-class FakeServerCoordinator(ServerCoordinator):
-    """A server coordinator we can use for testing"""
-    spawner = Mock()
-    start_server = Mock()
-
-    start_control_socket = Mock(name='start_control_socket')
-
-
 class TestFakeServerCoordinator(GenericServerCoordinatorTest):
-    server_coordinator_cls = FakeServerCoordinator
+    @property
+    def server_coordinator_cls(self):
+        class FakeServerCoordinator(ServerCoordinator):
+            """A server coordinator we can use for testing"""
+            spawner = Mock()
+            start_server = Mock()
+
+            start_control_socket = Mock(name='start_control_socket')
+        return FakeServerCoordinator
 
     def test_start(self):
         coordinator = self.coordinator
