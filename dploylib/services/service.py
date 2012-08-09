@@ -1,18 +1,22 @@
+import logging
 from .utils import ServerConfig
+from .coordinator import *
 
 
-class ThreadedServerCoordinator(object):
-    pass
+logger = logging.getLogger('dploylib.services.service')
 
 
 class YAMLConfigMapper(object):
-    pass
+    def process(self):
+        return {}
 
 
 class Service(object):
     """A facade to a DployService"""
-    def __init__(self, extends=None, config_mapper=None, coordinator=None):
-        self._templates = extends or []
+    logger = logger
+
+    def __init__(self, templates=None, config_mapper=None, coordinator=None):
+        self._templates = templates or []
         self._server_config = ServerConfig()
         self._configuration_locked = False
         self._config_mapper = config_mapper or YAMLConfigMapper()
@@ -32,19 +36,25 @@ class Service(object):
             return self._server_config
         return self._server_config
 
-    def start(self, config):
-        """Starts the service with a certain configuration"""
+    def start(self, config_data):
+        """Starts the service with a certain configuration data"""
         config_mapper = self._config_mapper
         coordinator = self._coordinator
         server_config = self.server_config
 
         server_names = server_config.names()
-        processed_config = config_mapper.process(config, servers=server_names)
-        coordinator.setup_servers(server_config, processed_config)
+        self.logger.debug('Starting service with %d servers' %
+                len(server_names))
+        settings = config_mapper.process(config_data, servers=server_names)
+        coordinator.setup_servers(server_config, settings)
         coordinator.start()
 
     def wait(self):
-        self._coordinator.wait()
+        try:
+            self._coordinator.wait()
+        except ServerCoordinatorFailing:
+            self.logger.exception('Service is failing. Please stop now.')
+            raise ServiceFailing('Service has stopped working')
 
     def stop(self):
         self._coordinator.stop()

@@ -4,7 +4,7 @@ tests.services.test_service
 
 Tests services.
 """
-from mock import Mock
+from mock import Mock, MagicMock
 from dploylib.services.service import Service
 
 
@@ -13,7 +13,7 @@ def test_initialize_service():
     mock_server = Mock()
     mock_config_mapper = Mock()
 
-    service = Service(extends=[mock_template],
+    service = Service(templates=[mock_template],
             config_mapper=mock_config_mapper)
     service.add_server('test', mock_server)
 
@@ -26,7 +26,7 @@ class TestBasicService(object):
         self.mock_config_mapper = Mock()
         self.mock_coordinator = Mock()
 
-        service = Service(extends=[self.mock_template],
+        service = Service(templates=[self.mock_template],
                 config_mapper=self.mock_config_mapper,
                 coordinator=self.mock_coordinator)
         service.add_server('test', self.mock_server)
@@ -39,7 +39,7 @@ class TestBasicService(object):
                 'servers': {'test': 'testconfig'},
             },
         }
-        mock_server_config = self.service._server_config = Mock()
+        mock_server_config = self.service._server_config = MagicMock()
         self.service.start(fake_config)
 
         mock_server_config.apply_templates.assert_called_with(

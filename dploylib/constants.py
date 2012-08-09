@@ -1,0 +1,1 @@
+COORDINATOR_SHUTDOWN = '!shutdown!'
