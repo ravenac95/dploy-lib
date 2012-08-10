@@ -10,22 +10,20 @@ class SomeObject(object):
 class BuildQueueServer(servers.Server):
     @servers.bind_in('request', 'rep', obj=SomeObject)
     def receive_request(self, socket, received):
-        # This should be an instance of obj
+        # This should be an instance of obj given that obj is provided to
+        # bind_in
         obj = received.obj
         # This is the raw envelope that was received
         received.envelope
-        # This is the raw envelope that was received
         socket.send_obj(obj)
 
 
-class ObservableWorkerBlueprint(object):
+class ObservableWorkerTemplate(object):
     broadcast = services.blueprint_server(BroadcastServer)
     queue = services.blueprint_server()
 
 
-service = services.Service(
-        coordinator=services.ThreadedServerCoordinator,
-        extends=[ObservableWorkerBlueprint])
+service = services.Service(templates=[ObservableWorkerTemplate])
 
 service.add_server('queue', BuildQueueServer)
 

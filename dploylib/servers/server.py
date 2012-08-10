@@ -1,34 +1,37 @@
+import json
 from dploylib.transport import Context, PollLoop
 
 
-__all__ = ['Server', 'bind_in']
+__all__ = ['Server', 'bind_in', 'bind', 'connect_in', 'connect']
 
 
 class SocketDescriptor(object):
     def __init__(self, socket_type, setup_type, input_handler=None,
-            name=None):
+            name=None, deserializer=None):
         self._socket_type = socket_type
         self._setup_type = setup_type
         self._input_handler = input_handler
         self._name = name
+        self._deserializer = deserializer
 
     def __get__(self, instance, instance_type=None):
         socket_description = SocketDescription(self._socket_type,
-                self._setup_type, self._input_handler, name=self._name)
+                self._setup_type, self._input_handler, name=self._name,
+                deserializer=self._deserializer)
         return socket_description
 
 
-def bind_in(socket_type, name=None):
+def bind_in(name, socket_type, obj=None):
     setup_type = "bind"
 
     def decorator(f):
         socket_name = name or f.__name__
         return SocketDescriptor(socket_type, setup_type, input_handler=f,
-                name=socket_name)
+                name=socket_name, deserializer=obj)
     return decorator
 
 
-def connect_in(socket_type, name=None):
+def connect_in(name, socket_type, obj=None):
     setup_type = "connect"
 
     def decorator(f):
@@ -38,13 +41,43 @@ def connect_in(socket_type, name=None):
     return decorator
 
 
-def bind(socket_type, name=None):
+def bind(name, socket_type):
     setup_type = "bind"
     return SocketDescriptor(socket_type, setup_type, name=name)
 
 
+def connect(name, socket_type):
+    setup_type = 'connect'
+    return SocketDescriptor(socket_type, setup_type, name=name)
+
+
+class SocketReceived(object):
+    """Stores data received on a socket"""
+    def __init__(self, envelope, data, obj=None):
+        self.envelope = envelope
+        self.obj = obj
+
+    @property
+    def json(self):
+        """If the mimetype for the data is application/json return json"""
+        envelope = self.envelope
+        if envelope.mimetype == 'application/json':
+            return json.loads(envelope.data)
+
+
+class SocketHandlerWrapper(object):
+    def __init__(self, handler, deserializer=None):
+        self._handler = handler
+        self._deserializer = deserializer
+
+    def __call__(self, socket):
+        envelope = socket.receive_envelope()
+        if envelope.data
+
+
 class SocketDescription(object):
-    def __init__(self, socket_type, setup_type, input_handler, name=None):
+    def __init__(self, socket_type, setup_type, input_handler, name=None,
+            deserializer=None, default_options=None):
         """Create a socket description
 
         :param socket_type: the type of socket
@@ -59,9 +92,10 @@ class SocketDescription(object):
         self._socket_type = socket_type
         self._setup_type = socket_type
         self._input_handler = input_handler
+        self._deserializer = deserializer
         self._name = name
 
-    def create_socket(self, context, options):
+    def create_socket(self, context, uri, options):
         socket = context.socket(self._socket_type, self._setup_type)
         for option_name, option_value in options:
             socket.set_option(option_name, option_value)
@@ -71,8 +105,13 @@ class SocketDescription(object):
     def name(self):
         return self._name
 
+    @property
+    def handler(self):
+        """A SocketHandlerWrapper"""
+        pass
 
-class Server(object):
+
+class ServerDescription(object):
     """Dploy Server. This is a description of a real server
 
     """
@@ -92,12 +131,15 @@ class Server(object):
                 context)
         descriptions_iter = self.iter_socket_descriptions()
         for local_name, description in descriptions_iter:
-            real_server.add_socket_from_description(local_name, description)
+            real_server.add_socket_from_description(description)
         return real_server
 
     def gather_socket_descriptions(self):
         """Gather all the socket descriptions for this server"""
         pass
+
+# Use Server description as a facade
+Server = ServerDescription
 
 
 class DployServer(object):
@@ -127,7 +169,7 @@ class DployServer(object):
         self.add_socket('_server_control', control_socket,
                 handler=self._handler_server_control)
 
-    def _handle_server_control(self, socket, envelope):
+    def _handle_server_control(self, received):
         pass
 
     def start(self):
@@ -138,5 +180,10 @@ class DployServer(object):
         """Add the socket and it's handler"""
         pass
 
-    def add_socket_from_description(self, name, description):
-        name = description.name or name
+    def add_socket_from_description(self, description):
+        name = description.name
+        socket_info = self._settings.socket_info(name)
+        uri = socket_info['uri']
+        options = socket_info.get('options', [])
+        socket = description.create_socket(self._context, uri, options)
+        self.add_socket(name, socket, description.handler)
