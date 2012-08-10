@@ -50,21 +50,20 @@ The syntax::
 
 YAML config::
     # Service configuration
-    service:
-      servers:
-        broadcast:
-          in:
-            uri: &build-broadcast-in
-              inproc://broadcast-in
-            options:
-              - ['hwm', 1000]
-          out:
-            uri: tcp://127.0.0.1:9991
-        queue:
-          request:
-            uri: tcp://127.0.0.1:9992
+    servers:
+      broadcast:
+        in:
+          uri: &build-broadcast-in
+            inproc://broadcast-in
+          options:
+            - ['hwm', 1000]
+        out:
+          uri: tcp://127.0.0.1:9991
+      queue:
+        request:
+          uri: tcp://127.0.0.1:9992
 
     # General configuration
-    settings:
+    general:
       output-uri: *build-broadcast-in
 """
