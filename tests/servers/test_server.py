@@ -168,31 +168,7 @@ class TestSocketReceived(object):
         self.received.obj
 
 
-class MockSocketList(object):
-    @classmethod
-    def create(cls, count):
-        socket_list = []
-        for i in xrange(count):
-            socket_list.append(('socket%d' % i, Mock(), Mock()))
-        return cls(socket_list)
-
-    def __init__(self, socket_list):
-        self.socket_list = socket_list
-
-    def name(self, index):
-        return self.socket_list[index][0]
-
-    def socket(self, index):
-        return self.socket_list[index][1]
-
-    def handler(self, index):
-        return self.socket_list[index][2]
-
-    def __iter__(self):
-        return iter(self.socket_list)
-
-
-class GenericDployServerTest(object):
+class TestDployServer(object):
     def setup(self):
         self.mock_settings = Mock()
         self.server_name = 'name'
@@ -213,16 +189,6 @@ class GenericDployServerTest(object):
     def teardown(self):
         self.socket_storage_patch.stop()
 
-
-class GenericDployServerWithSocketTest(GenericDployServerTest):
-    def setup(self):
-        super(GenericDployServerWithSocketTest, self).setup()
-        self.mock_socket_list = MockSocketList.create(self.socket_count)
-        for name, socket, handler in self.mock_socket_list:
-            self.server.add_socket(name, socket, handler)
-
-
-class TestDployServer(GenericDployServerTest):
     def test_add_socket(self):
         name = 'name'
         mock_socket = Mock()
@@ -233,8 +199,6 @@ class TestDployServer(GenericDployServerTest):
                 mock_handler)
         self.mock_socket_storage.register.assert_called_with(name, mock_socket)
 
-
-class TestDployServerWithSocketTest(GenericDployServerTest):
     def test_start(self):
         self.mock_poll_loop.poll.side_effect = ServerStopped
 

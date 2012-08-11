@@ -7,7 +7,7 @@ logger = logging.getLogger('dploylib.servers.server')
 
 
 def bind_in(name, socket_type, obj=None):
-    setup_type = "bind"
+    setup_type = 'bind'
 
     def decorator(f):
         return SocketDescription(name, socket_type, setup_type,
@@ -16,7 +16,7 @@ def bind_in(name, socket_type, obj=None):
 
 
 def connect_in(name, socket_type, obj=None):
-    setup_type = "connect"
+    setup_type = 'connect'
 
     def decorator(f):
         return SocketDescription(name, socket_type, setup_type,
@@ -25,7 +25,7 @@ def connect_in(name, socket_type, obj=None):
 
 
 def bind(name, socket_type):
-    setup_type = "bind"
+    setup_type = 'bind'
     return SocketDescription(name, socket_type, setup_type)
 
 
@@ -128,9 +128,7 @@ class SocketDescription(object):
 
 
 class ServerDescription(object):
-    """Dploy Server. This is a description of a real server
-
-    """
+    """Provides the socket description of a DployServer"""
     @classmethod
     def new(cls, name, settings, control_uri, context=None):
         server_description = cls()
