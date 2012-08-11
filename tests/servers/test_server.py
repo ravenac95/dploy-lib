@@ -4,7 +4,6 @@ tests.servers.test_server
 
 """
 from nose.tools import eq_, raises
-from nose.plugins.attrib import attr
 from mock import Mock, patch, ANY, call
 from dploylib.servers.server import *
 
@@ -27,7 +26,6 @@ class GenericServerTest(object):
         self.poll_loop_patch.stop()
 
 
-@attr('medium')
 class TestServerDescription(object):
     def setup(self):
         self.description_patch = patch(
@@ -135,7 +133,7 @@ class TestSocketHandlerWrapper(object):
                 self.mock_deserializer)
 
         self.mock_handler.assert_called_with(self.mock_server,
-                mock_received_cls.return_value)
+                mock_socket, mock_received_cls.return_value)
 
 
 class TestSocketReceived(object):
@@ -168,3 +166,84 @@ class TestSocketReceived(object):
     @patch('json.loads')
     def test_get_obj_raises_error(self, mock_loads):
         self.received.obj
+
+
+class MockSocketList(object):
+    @classmethod
+    def create(cls, count):
+        socket_list = []
+        for i in xrange(count):
+            socket_list.append(('socket%d' % i, Mock(), Mock()))
+        return cls(socket_list)
+
+    def __init__(self, socket_list):
+        self.socket_list = socket_list
+
+    def name(self, index):
+        return self.socket_list[index][0]
+
+    def socket(self, index):
+        return self.socket_list[index][1]
+
+    def handler(self, index):
+        return self.socket_list[index][2]
+
+    def __iter__(self):
+        return iter(self.socket_list)
+
+
+class GenericDployServerTest(object):
+    def setup(self):
+        self.mock_settings = Mock()
+        self.server_name = 'name'
+        self.control_uri = 'uri'
+        self.mock_context = Mock()
+
+        self.mock_poll_loop = Mock()
+
+        self.socket_storage_patch = patch(
+                'dploylib.servers.server.SocketStorage')
+        self.mock_socket_storage_cls = self.socket_storage_patch.start()
+        self.mock_socket_storage = self.mock_socket_storage_cls.return_value
+
+        self.server = DployServer(self.server_name, self.mock_settings,
+                self.control_uri, self.mock_context,
+                poll_loop=self.mock_poll_loop)
+
+    def teardown(self):
+        self.socket_storage_patch.stop()
+
+
+class GenericDployServerWithSocketTest(GenericDployServerTest):
+    def setup(self):
+        super(GenericDployServerWithSocketTest, self).setup()
+        self.mock_socket_list = MockSocketList.create(self.socket_count)
+        for name, socket, handler in self.mock_socket_list:
+            self.server.add_socket(name, socket, handler)
+
+
+class TestDployServer(GenericDployServerTest):
+    def test_add_socket(self):
+        name = 'name'
+        mock_socket = Mock()
+        mock_handler = Mock()
+        self.server.add_socket(name, mock_socket, mock_handler)
+
+        self.mock_poll_loop.register.assert_called_with(mock_socket,
+                mock_handler)
+        self.mock_socket_storage.register.assert_called_with(name, mock_socket)
+
+
+class TestDployServerWithSocketTest(GenericDployServerTest):
+    def test_start(self):
+        self.mock_poll_loop.poll.side_effect = ServerStopped
+
+        self.server.start()
+
+        self.mock_poll_loop.poll.assert_called_with()
+
+
+def test_storage():
+    storage = SocketStorage()
+    storage.register('somename', 'socket')
+    eq_(storage.somename, 'socket')

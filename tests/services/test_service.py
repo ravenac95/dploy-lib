@@ -46,8 +46,7 @@ class TestBasicService(object):
         mock_server_config.apply_templates.assert_called_with(
                 self.mock_templates)
 
-        self.mock_config_mapper.process.assert_called_with(fake_config,
-                servers=mock_server_config.names.return_value)
+        self.mock_config_mapper.process.assert_called_with(fake_config)
         mock_processed_config = self.mock_config_mapper.process.return_value
         mock_coordinator.setup_servers.assert_called_with(
                 mock_server_config, mock_processed_config)

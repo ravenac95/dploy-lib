@@ -1,5 +1,8 @@
 import zmq
+import logging
 from .wrapper import Socket
+
+logger = logging.getLogger('dploylib.transport.poll')
 
 
 class PollLoop(object):
@@ -8,6 +11,8 @@ class PollLoop(object):
     The handlers of poll events are simply callables. This only handles POLLIN
     events at this time.
     """
+    logger = logger
+
     @classmethod
     def new(cls):
         poller = zmq.Poller()
@@ -22,6 +27,8 @@ class PollLoop(object):
         # FIXME? it let's anything through at the moment that isn't a dploy
         # socket it even has a test that asserts this at this time, maybe we
         # can do something better later
+        self.logger.debug('Registering handler: %r for socket: %r' %
+                (handler, socket))
         raw_socket = socket
         if isinstance(socket, Socket):
             raw_socket = socket.zmq_socket

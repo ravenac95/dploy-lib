@@ -39,9 +39,9 @@ class Service(object):
         server_config = self.server_config
 
         server_names = server_config.names()
-        self.logger.debug('Starting service with %d servers.' %
+        self.logger.debug('Starting service with %d server(s).' %
                 len(server_names))
-        settings = config_mapper.process(config_data, servers=server_names)
+        settings = config_mapper.process(config_data)
         coordinator.setup_servers(server_config, settings)
         coordinator.start()
 

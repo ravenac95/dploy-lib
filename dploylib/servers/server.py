@@ -1,5 +1,9 @@
 import json
+import logging
+from dploylib import constants
 from dploylib.transport import Context, PollLoop
+
+logger = logging.getLogger('dploylib.servers.server')
 
 
 def bind_in(name, socket_type, obj=None):
@@ -78,7 +82,7 @@ class SocketHandlerWrapper(object):
     def __call__(self, socket):
         envelope = socket.receive_envelope()
         received = SocketReceived(envelope, self._deserializer)
-        self._handler(self._server, received)
+        self._handler(self._server, socket, received)
 
 
 class SocketDescription(object):
@@ -115,6 +119,10 @@ class SocketDescription(object):
 
     def handler(self, server):
         """A SocketHandlerWrapper"""
+        input_handler = self._input_handler
+        if not input_handler:
+            return None
+        print input_handler
         return SocketHandlerWrapper(server, self._input_handler,
                 self._deserializer)
 
@@ -144,7 +152,6 @@ class ServerDescription(object):
         class_iteritems = self.__class__.__dict__.iteritems()
         socket_descriptions = []
         for name, value in class_iteritems:
-            print SocketDescription.__class__
             if hasattr(value, 'create_socket'):
                 socket_descriptions.append((name, value))
         return socket_descriptions
@@ -156,6 +163,8 @@ Server = ServerDescription
 
 class DployServer(object):
     """The actual server behind the scenes"""
+    logger = logger
+
     @classmethod
     def new(cls, name, settings, control_uri, context=None):
         context = context or Context.new()
@@ -163,14 +172,15 @@ class DployServer(object):
         server.connect_to_control()
         return server
 
-    def __init__(self, name, settings, control_uri, context):
+    def __init__(self, name, settings, control_uri, context,
+            poll_loop=None):
         self._context = context
         self._name = name
         self._settings = settings
         self._control_uri = control_uri
         self._control_socket = None
-        self._poll_loop = PollLoop.new()
-        self.sockets = None
+        self._poll_loop = poll_loop or PollLoop.new()
+        self.sockets = SocketStorage()
 
     def connect_to_control(self):
         control_uri = self._control_uri
@@ -179,18 +189,27 @@ class DployServer(object):
         control_socket.connect(control_uri)
         self._control_socket = control_socket
         self.add_socket('_server_control', control_socket,
-                handler=self._handler_server_control)
+                handler=self._handle_server_control)
 
-    def _handle_server_control(self, received):
-        pass
+    def _handle_server_control(self, socket):
+        text = socket.receive_text()
+        if text == constants.COORDINATOR_SHUTDOWN:
+            raise ServerStopped()
 
     def start(self):
         """Run the poll loop for the server"""
-        pass
+        self.logger.debug('Starting server "%s"' % self._name)
+        while True:
+            try:
+                self._poll_loop.poll()
+            except ServerStopped:
+                self.logger.debug('Stopping server "%s"' % self._name)
+                break
 
     def add_socket(self, name, socket, handler=None):
         """Add the socket and it's handler"""
-        pass
+        self.sockets.register(name, socket)
+        self._poll_loop.register(socket, handler)
 
     def add_socket_from_description(self, description):
         name = description.name
@@ -198,4 +217,19 @@ class DployServer(object):
         uri = socket_info['uri']
         options = socket_info.get('options', [])
         socket = description.create_socket(self._context, uri, options)
-        self.add_socket(name, socket, description.handler)
+        self.add_socket(name, socket, description.handler(self))
+
+
+class ServerStopped(Exception):
+    pass
+
+
+class SocketStorage(object):
+    def __init__(self):
+        self._storage = {}
+
+    def register(self, name, socket):
+        self._storage[name] = socket
+
+    def __getattr__(self, name):
+        return self._storage[name]
