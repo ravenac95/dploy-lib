@@ -2,32 +2,12 @@ import json
 from dploylib.transport import Context, PollLoop
 
 
-__all__ = ['Server', 'bind_in', 'bind', 'connect_in', 'connect']
-
-
-class SocketDescriptor(object):
-    def __init__(self, socket_type, setup_type, input_handler=None,
-            name=None, deserializer=None):
-        self._socket_type = socket_type
-        self._setup_type = setup_type
-        self._input_handler = input_handler
-        self._name = name
-        self._deserializer = deserializer
-
-    def __get__(self, instance, instance_type=None):
-        socket_description = SocketDescription(self._socket_type,
-                self._setup_type, self._input_handler, name=self._name,
-                deserializer=self._deserializer)
-        return socket_description
-
-
 def bind_in(name, socket_type, obj=None):
     setup_type = "bind"
 
     def decorator(f):
-        socket_name = name or f.__name__
-        return SocketDescriptor(socket_type, setup_type, input_handler=f,
-                name=socket_name, deserializer=obj)
+        return SocketDescription(name, socket_type, setup_type,
+                input_handler=f, deserializer=obj)
     return decorator
 
 
@@ -35,48 +15,74 @@ def connect_in(name, socket_type, obj=None):
     setup_type = "connect"
 
     def decorator(f):
-        socket_name = name or f.__name__
-        return SocketDescriptor(socket_type, setup_type, input_handler=f,
-                name=socket_name)
+        return SocketDescription(name, socket_type, setup_type,
+                input_handler=f, deserializer=obj)
     return decorator
 
 
 def bind(name, socket_type):
     setup_type = "bind"
-    return SocketDescriptor(socket_type, setup_type, name=name)
+    return SocketDescription(name, socket_type, setup_type)
 
 
 def connect(name, socket_type):
     setup_type = 'connect'
-    return SocketDescriptor(socket_type, setup_type, name=name)
+    return SocketDescription(name, socket_type, setup_type)
+
+
+class DataNotDeserializable(Exception):
+    pass
 
 
 class SocketReceived(object):
     """Stores data received on a socket"""
-    def __init__(self, envelope, data, obj=None):
+    def __init__(self, envelope, deserializer):
         self.envelope = envelope
-        self.obj = obj
+        self._deserializer = deserializer
+        self._json = None
+        self._obj = None
 
     @property
     def json(self):
         """If the mimetype for the data is application/json return json"""
-        envelope = self.envelope
-        if envelope.mimetype == 'application/json':
-            return json.loads(envelope.data)
+        json_data = self._json
+        if not json_data:
+            envelope = self.envelope
+            if envelope.mimetype == 'application/json':
+                json_data = json.loads(envelope.data)
+                self._json = json_data
+        return json_data
+
+    @property
+    def obj(self):
+        """Grab the object represented by the json data"""
+        deserializer = self._deserializer
+        if not deserializer:
+            return None
+        obj = self._obj
+        if not obj:
+            json_data = self.json
+            if json_data is None:
+                raise DataNotDeserializable()
+            obj = deserializer.deserialize(json_data)
+            self._obj = obj
+        return obj
 
 
 class SocketHandlerWrapper(object):
-    def __init__(self, handler, deserializer=None):
+    def __init__(self, server, handler, deserializer=None):
+        self._server = server
         self._handler = handler
         self._deserializer = deserializer
 
     def __call__(self, socket):
         envelope = socket.receive_envelope()
-        if envelope.data
+        received = SocketReceived(envelope, self._deserializer)
+        self._handler(self._server, received)
 
 
 class SocketDescription(object):
-    def __init__(self, socket_type, setup_type, input_handler, name=None,
+    def __init__(self, name, socket_type, setup_type, input_handler=None,
             deserializer=None, default_options=None):
         """Create a socket description
 
@@ -90,13 +96,15 @@ class SocketDescription(object):
         :type name: str
         """
         self._socket_type = socket_type
-        self._setup_type = socket_type
+        self._setup_type = setup_type
         self._input_handler = input_handler
         self._deserializer = deserializer
         self._name = name
 
     def create_socket(self, context, uri, options):
-        socket = context.socket(self._socket_type, self._setup_type)
+        socket = context.socket(self._socket_type)
+        setup_method = getattr(socket, self._setup_type)
+        setup_method(uri)
         for option_name, option_value in options:
             socket.set_option(option_name, option_value)
         return socket
@@ -105,10 +113,10 @@ class SocketDescription(object):
     def name(self):
         return self._name
 
-    @property
-    def handler(self):
+    def handler(self, server):
         """A SocketHandlerWrapper"""
-        pass
+        return SocketHandlerWrapper(server, self._input_handler,
+                self._deserializer)
 
 
 class ServerDescription(object):
@@ -122,9 +130,6 @@ class ServerDescription(object):
                 context)
         return server
 
-    def __init__(self):
-        pass
-
     def create_server(self, server_name, settings, control_uri, context):
         """Creates the actual server using the DployServer class"""
         real_server = DployServer.new(server_name, settings, control_uri,
@@ -134,9 +139,16 @@ class ServerDescription(object):
             real_server.add_socket_from_description(description)
         return real_server
 
-    def gather_socket_descriptions(self):
+    def iter_socket_descriptions(self):
         """Gather all the socket descriptions for this server"""
-        pass
+        class_iteritems = self.__class__.__dict__.iteritems()
+        socket_descriptions = []
+        for name, value in class_iteritems:
+            print SocketDescription.__class__
+            if hasattr(value, 'create_socket'):
+                socket_descriptions.append((name, value))
+        return socket_descriptions
+
 
 # Use Server description as a facade
 Server = ServerDescription
