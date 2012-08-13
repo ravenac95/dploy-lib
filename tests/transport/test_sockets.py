@@ -10,6 +10,7 @@ import random
 from Queue import Empty
 from nose.tools import eq_
 from nose.plugins.attrib import attr
+from testkit import timeout
 from dploylib.transport import Socket
 
 
@@ -125,6 +126,7 @@ class TestSimpleRepReq(GenericSocketTest):
     """A Simple Rep Req server"""
     socket_server = SimpleRepServer
 
+    @timeout(5.0)
     def test_make_text_request(self):
         text = 'hello'
         req_socket = Socket.connect_new('req', self.server_uri)
@@ -133,6 +135,7 @@ class TestSimpleRepReq(GenericSocketTest):
         received_text = req_socket.receive_text()
         eq_(received_text, text)
 
+    @timeout(5.0)
     def test_make_obj_request(self):
         obj = SimpleDataObject('hello')
         req_socket = Socket.connect_new('req', self.server_uri)
@@ -184,6 +187,7 @@ class GenericPubSubTest(GenericSocketTest):
 class TestSimplePubSub(GenericPubSubTest):
     socket_server = SimplePubServer
 
+    @timeout(5.0)
     def test_receive_text_messages(self):
         # Connect to the socket
         sub_socket = Socket.connect_new('sub', self.server_uri, [
@@ -219,10 +223,11 @@ class ObjectPubServer(GenericSocketTestServer):
 class TestObjectPubSub(GenericPubSubTest):
     socket_server = ObjectPubServer
 
+    @timeout(5.0)
     def test_receive_text_messages(self):
         # Connect to the socket
         sub_socket = Socket.connect_new('sub', self.server_uri, [
-            ['subscribe', self.id]
+            ['subscribe', self.id],
         ])
         # Synchronize
         self.synchronize_with_server()

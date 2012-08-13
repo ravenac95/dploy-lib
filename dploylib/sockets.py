@@ -59,13 +59,13 @@ class Envelope(object):
     This is a standard definition so that all messages are decoded the same
     way. The envelope is as follows (for the time being)::
 
-         -----------------------
-        | id - a string or ''   |
-         -----------------------
-        | mimetype              |
-         -----------------------
-        | body                  |
-         -----------------------
+         ------------------------------------
+        | id - a string or ''                |
+         ------------------------------------
+        | mimetype                           |
+         ------------------------------------
+        | body                               |
+         ------------------------------------
 
     .. note::
 
