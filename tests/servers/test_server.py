@@ -86,6 +86,9 @@ class TestSocketDescription(object):
                 deserializer=self.mock_deserializer,
                 default_options=self.mock_options)
 
+    def teardown(self):
+        self.socket_handler_wrapper_patch.stop()
+
     def test_create_socket(self):
         mock_context = Mock()
         uri = 'uri'

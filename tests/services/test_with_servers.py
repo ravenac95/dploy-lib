@@ -8,7 +8,7 @@ from dploylib.transport import *
 class EchoServer(servers.Server):
     @servers.bind_in('request', 'rep')
     def echo_request(self, socket, received):
-        socket.send(received.envelope)
+        socket.send_envelope(received.envelope)
 
 
 class EchoServerProcess(ProcessWrapper):
@@ -17,13 +17,27 @@ class EchoServerProcess(ProcessWrapper):
         service.add_server('echo', EchoServer)
         self.service = service
         self.service_config = shared_options['service_config']
+        self.service.start(config_dict=self.service_config)
 
     def run(self):
-        self.service.start(config_dict=self.service_config)
+        self.service.wait()
+
+    def teardown(self):
+        self.service.stop()
+
+
+class PubServer(servers.Server):
+    out = servers.bind('out', 'pub')
+
+    @servers.bind_in('in', 'pull')
+    def pub_in(self, socket, received):
+        self.sockets.out.send_envelope(received.envelope)
 
 
 class TestEchoServerSetup(MultiprocessTest):
     wrappers = [EchoServerProcess]
+
+    timeout = 2.0
 
     def shared_options(self):
         echo_uri = "tcp://127.0.0.1:14445"

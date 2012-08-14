@@ -122,7 +122,6 @@ class SocketDescription(object):
         input_handler = self._input_handler
         if not input_handler:
             return None
-        print input_handler
         return SocketHandlerWrapper(server, self._input_handler,
                 self._deserializer)
 
@@ -215,7 +214,8 @@ class DployServer(object):
         uri = socket_info['uri']
         options = socket_info.get('options', [])
         socket = description.create_socket(self._context, uri, options)
-        self.add_socket(name, socket, description.handler(self))
+        handler = description.handler(self)
+        self.add_socket(name, socket, handler)
 
 
 class ServerStopped(Exception):
