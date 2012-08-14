@@ -32,8 +32,11 @@ class Service(object):
             return self._server_config
         return self._server_config
 
-    def start(self, config_data):
+    def start(self, config_file=None, config_string=None, config_dict=None):
         """Starts the service with a certain configuration data"""
+        if not (config_file or config_string or config_dict):
+            raise TypeError('One of config_file, config_string or config_dict'
+                    ' is required')
         config_mapper = self._config_mapper
         coordinator = self._coordinator
         server_config = self.server_config
@@ -41,7 +44,12 @@ class Service(object):
         server_names = server_config.names()
         self.logger.debug('Starting service with %d server(s).' %
                 len(server_names))
-        settings = config_mapper.process(config_data)
+        if config_file:
+            settings = config_mapper.process(config_file)
+        if config_string:
+            settings = config_mapper.process_string(config_string)
+        if config_dict:
+            settings = Settings(config_dict)
         coordinator.setup_servers(server_config, settings)
         coordinator.start()
 

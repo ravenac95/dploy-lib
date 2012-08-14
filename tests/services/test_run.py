@@ -56,11 +56,11 @@ class TestServiceRunWithThreads(object):
 
     def test_single_server(self):
         self.service.add_server('broadcast', FakeServer)
-        self.service.start(None)
+        self.service.start('fake')
         self.service.stop()
 
     def test_mulitple_servers(self):
         self.service.add_server('broadcast', FakeServer)
         self.service.add_server('queue', FakeServer)
-        self.service.start(None)
+        self.service.start('fake')
         self.service.stop()
