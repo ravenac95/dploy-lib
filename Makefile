@@ -12,3 +12,6 @@ medium-test:
 # Run small tests only
 small-test:
 	nosetests -A 'not (medium or large)' -d
+
+htmldocs:
+	@cd docs; make html
