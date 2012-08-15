@@ -100,6 +100,7 @@ django web development frameworks. Let's have a look at what just happened:
 
 To stop the server, use control-C.
 
+
 Standard service configuration
 ------------------------------
 
@@ -128,3 +129,24 @@ Here is a basic configuration:
     general:
       someconfig1: somevalue1
       someconfig2: somevalue2
+
+If this file is saved to ``config.yaml`` we can simplify the previous service
+to this::
+
+    from dploylib import servers
+    from dploylib.services import Service
+
+    class EchoServer(servers.Server):
+        @servers.bind_in('request', 'rep')
+        def echo_request(self, socket, received):
+            socket.send_envelope(received)
+    
+    service = Service()
+    service.add_server('echo', EchoServer)
+
+    if __name__ == '__main__':
+        service.run(config_file="config.yaml")
+
+Now, all we have to do to change the uri of the request server is change the
+config.yaml file. At this time the service does not yet have a standard command
+line interface. This feature is planned for the not-so-distant future.

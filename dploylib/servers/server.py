@@ -75,8 +75,16 @@ class DataNotDeserializable(Exception):
 
 
 class SocketReceived(object):
-    """Stores data received on a socket."""
-    def __init__(self, envelope, deserializer):
+    """Stores data received on a socket. This is essentially a request object
+    for dploy Servers. The name is SocketReceived because the servers aren't
+    necessarily reacting to requests.
+
+    :param envelope: The received
+        :class:`~dploylib.transport.envelope.Envelope`
+    :param deserializer: (optional) A class that implements a classmethod
+        ``deserialize`` which is used to deserialize any data in the envelope
+    """
+    def __init__(self, envelope, deserializer=None):
         self.envelope = envelope
         self._deserializer = deserializer
         self._json = None
@@ -110,6 +118,7 @@ class SocketReceived(object):
 
 
 class SocketHandlerWrapper(object):
+    """Wraps the handling function for a socket"""
     def __init__(self, server, handler, deserializer=None):
         self._server = server
         self._handler = handler
@@ -122,19 +131,23 @@ class SocketHandlerWrapper(object):
 
 
 class SocketDescription(object):
+    """Describes a socket. This is the low level class used by :func:`bind_in`,
+    :func:`bind`, :func:`connect_in`, and :func:`connect`
+
+    :param name: The name of the socket. This is used when searching the
+        settings for a socket's settings
+    :param socket_type: The type of socket. One of 'rep', 'req', 'pub', 'sub',
+        'push', 'pull', 'pair', 'router', or 'dealer'.
+    :param setup_type: The setup type. Either 'bind' or 'connect'
+    :param input_handler: The handling function/method for this socket
+    :param deserializer: (optional) A class that implements a
+        method/classmethod ``deserialize`` which is used to deserialize any
+        data in the envelope
+    :param default_options: (optional) Default list of 2-tuple options to apply
+        to the socket
+    """
     def __init__(self, name, socket_type, setup_type, input_handler=None,
             deserializer=None, default_options=None):
-        """Create a socket description
-
-        :param socket_type: the type of socket
-        :type socket_type: str
-        :param setup_type: 'connect' or 'bind'
-        :type setup_type: str
-        :param input_handler: (optional) a function to handle input
-        :type input_handler: str
-        :param name: (optional) name of the socket
-        :type name: str
-        """
         self._socket_type = socket_type
         self._setup_type = setup_type
         self._input_handler = input_handler
