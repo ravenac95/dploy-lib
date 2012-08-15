@@ -39,6 +39,16 @@ in dploy applications.
 
     transport/intro
 
+Dploy Notes
+-----------
+
+Here are a collection of documents describing portions of dploy's architecture
+
+.. toctree::
+    :maxdepth: 2
+
+    architecture/messagetypes
+
 API
 ---
 
@@ -46,6 +56,8 @@ API
     :maxdepth: 2
 
     api/services
+    api/servers
+    api/transport
 
 
 Indices and tables

@@ -32,7 +32,12 @@ class PollLoop(object):
         self._handler_map = {}
 
     def register(self, socket, handler):
-        """Registers a socket or FD and it's handler to the poll loop"""
+        """Registers a socket or FD and it's handler to the poll loop
+
+        :param socket: A :class:`~dploylib.transport.Socket`, a zeromq socket,
+            or a file descriptor
+        :param handler: A callable that handles input events on the socket
+        """
         # FIXME? it let's anything through at the moment that isn't a dploy
         # socket it even has a test that asserts this at this time, maybe we
         # can do something better later
@@ -45,6 +50,11 @@ class PollLoop(object):
         self._poller.register(raw_socket, zmq.POLLIN)
 
     def poll(self, timeout=None):
+        """Poll the sockets for any input and route to any relevant handlers
+
+        :param timeout: The timeout in seconds
+        :type timeout: float
+        """
         sockets = dict(self._poller.poll(timeout=timeout))
         for raw_socket, handler_info in self._handler_map.iteritems():
             socket, handler = handler_info

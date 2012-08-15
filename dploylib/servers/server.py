@@ -176,7 +176,7 @@ class SocketDescription(object):
 
 
 class ServerDescription(object):
-    """Provides the socket description of a DployServer"""
+    """Provides the socket description of a :class:`DployServer`"""
     @classmethod
     def new(cls, name, settings, control_uri, context=None):
         server_description = cls()
@@ -185,7 +185,14 @@ class ServerDescription(object):
         return server
 
     def create_server(self, server_name, settings, control_uri, context):
-        """Creates the actual server using the DployServer class"""
+        """Creates the actual server instance using :class:`DployServer`
+
+        :param server_name: The name of the server
+        :param settings: A settings object for a particular server
+        :param control_uri: A URI to the socket that controls this server
+        :param context: The :class:`~dploylib.transport.Context` for this
+            server
+        """
         real_server = DployServer.new(server_name, settings, control_uri,
                 context)
         descriptions_iter = self.iter_socket_descriptions()
@@ -194,7 +201,11 @@ class ServerDescription(object):
         return real_server
 
     def iter_socket_descriptions(self):
-        """Gather all the socket descriptions for this server"""
+        """Iterate through all the socket descriptions on this
+        ServerDescription
+
+        :returns: An iterator of ([name], [socket_description])
+        """
         class_iteritems = self.__class__.__dict__.iteritems()
         socket_descriptions = []
         for name, value in class_iteritems:
@@ -272,6 +283,7 @@ class ServerStopped(Exception):
 
 
 class SocketStorage(object):
+    """The storage of the sockets"""
     def __init__(self):
         self._storage = {}
 

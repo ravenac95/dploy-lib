@@ -28,7 +28,10 @@ def get_zmq_constant(name):
 
 
 class Context(object):
-    """A wrapper around a zeromq Context"""
+    """A wrapper around a zeromq Context
+
+    :param zmq_context: The zeromq context
+    """
     @classmethod
     def new(cls):
         context = zmq.Context()
@@ -48,7 +51,11 @@ class Context(object):
 
 
 class Socket(object):
-    """A wrapper around a zeromq Socket"""
+    """A wrapper around a zeromq Socket
+
+    :param zmq_socket: The underlying zeromq socket
+    :param zmq_context: The zeromq context related to the zeromq socket
+    """
     @classmethod
     def new(cls, socket_type, context=None):
         """Creates a new socket
