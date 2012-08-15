@@ -1,7 +1,6 @@
-import json
 import logging
 from dploylib import constants
-from dploylib.transport import Context, PollLoop
+from dploylib.transport import Context, PollLoop, ReceivedData
 
 logger = logging.getLogger('dploylib.servers.server')
 
@@ -70,53 +69,6 @@ def connect(name, socket_type):
     return SocketDescription(name, socket_type, setup_type)
 
 
-class DataNotDeserializable(Exception):
-    pass
-
-
-class SocketReceived(object):
-    """Stores data received on a socket. This is essentially a request object
-    for dploy Servers. The name is SocketReceived because the servers aren't
-    necessarily reacting to requests.
-
-    :param envelope: The received
-        :class:`~dploylib.transport.envelope.Envelope`
-    :param deserializer: (optional) A class that implements a classmethod
-        ``deserialize`` which is used to deserialize any data in the envelope
-    """
-    def __init__(self, envelope, deserializer=None):
-        self.envelope = envelope
-        self._deserializer = deserializer
-        self._json = None
-        self._obj = None
-
-    @property
-    def json(self):
-        """If the mimetype for the data is application/json return json"""
-        json_data = self._json
-        if not json_data:
-            envelope = self.envelope
-            if envelope.mimetype == 'application/json':
-                json_data = json.loads(envelope.data)
-                self._json = json_data
-        return json_data
-
-    @property
-    def obj(self):
-        """Grab the object represented by the json data"""
-        deserializer = self._deserializer
-        if not deserializer:
-            return None
-        obj = self._obj
-        if not obj:
-            json_data = self.json
-            if json_data is None:
-                raise DataNotDeserializable()
-            obj = deserializer.deserialize(json_data)
-            self._obj = obj
-        return obj
-
-
 class SocketHandlerWrapper(object):
     """Wraps the handling function for a socket"""
     def __init__(self, server, handler, deserializer=None):
@@ -126,7 +78,7 @@ class SocketHandlerWrapper(object):
 
     def __call__(self, socket):
         envelope = socket.receive_envelope()
-        received = SocketReceived(envelope, self._deserializer)
+        received = ReceivedData(envelope, self._deserializer)
         self._handler(self._server, socket, received)
 
 
