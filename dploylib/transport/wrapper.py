@@ -14,27 +14,6 @@ from .envelope import Envelope
 
 TEXT_MIMETYPE = 'text/plain'
 
-_SOCKET_TYPE_MAP = {
-    'pull': zmq.PULL,
-    'push': zmq.PUSH,
-    'pub': zmq.PUB,
-    'sub': zmq.SUB,
-    'req': zmq.REQ,
-    'rep': zmq.REP,
-    'router': zmq.ROUTER,
-    'dealer': zmq.DEALER,
-    'pair': zmq.PAIR,
-}
-
-_SOCKET_OPTION_MAP = {
-    'hwm': zmq.HWM,
-    'swap': zmq.SWAP,
-    'affinity': zmq.AFFINITY,
-    'identity': zmq.IDENTITY,
-    'subscribe': zmq.SUBSCRIBE,
-    'unsubscribe': zmq.UNSUBSCRIBE,
-}
-
 
 def clean_option_value(value):
     if isinstance(value, (str, int)):
