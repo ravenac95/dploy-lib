@@ -7,6 +7,17 @@ logger = logging.getLogger('dploylib.servers.server')
 
 
 def bind_in(name, socket_type, obj=None):
+    """A decorator that creates a SocketDescription describing a socket bound
+    to receive input. The decorated function or method is used as the input
+    event handler.
+
+    :param name: The name of the socket (for configuration purposes)
+    :param socket_type: The lowercase name of the zeromq socket type
+    :type socket_type: str
+    :param obj: (optional) A class or object that implements the
+        ``deserialize`` method to deserialize incoming data
+    :returns: A :class:`SocketDescription`
+    """
     setup_type = 'bind'
 
     def decorator(f):
@@ -16,6 +27,17 @@ def bind_in(name, socket_type, obj=None):
 
 
 def connect_in(name, socket_type, obj=None):
+    """A decorator that creates a SocketDescription describing a socket
+    connected to receive input. The decorated function or method is used as the
+    input event handler.
+
+    :param name: The name of the socket (for configuration purposes)
+    :param socket_type: The lowercase name of the zeromq socket type
+    :type socket_type: str
+    :param obj: (optional) A class or object that implements the
+        ``deserialize`` method to deserialize incoming data
+    :returns: A :class:`SocketDescription`
+    """
     setup_type = 'connect'
 
     def decorator(f):
@@ -25,11 +47,25 @@ def connect_in(name, socket_type, obj=None):
 
 
 def bind(name, socket_type):
+    """A decorator that creates a SocketDescription that describes a bound
+    socket. This socket does not listen for input.
+
+    :param name: The name of the socket (for configuration purposes)
+    :param socket_type: The lowercase name of the zeromq socket type
+    :type socket_type: str
+    """
     setup_type = 'bind'
     return SocketDescription(name, socket_type, setup_type)
 
 
 def connect(name, socket_type):
+    """A decorator that creates a SocketDescription that describes a connected
+    socket. This socket does not listen for input.
+
+    :param name: The name of the socket (for configuration purposes)
+    :param socket_type: The lowercase name of the zeromq socket type
+    :type socket_type: str
+    """
     setup_type = 'connect'
     return SocketDescription(name, socket_type, setup_type)
 
@@ -39,7 +75,7 @@ class DataNotDeserializable(Exception):
 
 
 class SocketReceived(object):
-    """Stores data received on a socket"""
+    """Stores data received on a socket."""
     def __init__(self, envelope, deserializer):
         self.envelope = envelope
         self._deserializer = deserializer
