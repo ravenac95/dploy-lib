@@ -12,6 +12,13 @@ class ServerCoordinatorFailing(Exception):
 
 
 class ServerCoordinator(object):
+    """A generic ServerCoordinator meant to be subclassed. It does not do any
+    of the spawning of servers on it's own.
+
+    :param control_uri: default ``inproc://control``, the uri for the service
+        control socket
+    :param context: default None, a :class:`~dploylib.transport.Context`
+    """
     # This must be compatible with threading.Thread
     spawner = None
     logger = logger
@@ -30,6 +37,7 @@ class ServerCoordinator(object):
         return context
 
     def setup_servers(self, server_config, settings):
+        """Setup the servers"""
         spawn_settings = []
         for name, server in server_config:
             server_settings = settings.server_settings(name)

@@ -8,7 +8,18 @@ logger = logging.getLogger('dploylib.services.service')
 
 
 class Service(object):
-    """A facade to a DployService"""
+    """The Service object provides a way to create a zeromq-based dploy
+    service. In dploy, a the service object is in charge of a combination of
+    :class:`dploylib.servers.server.Server` objects. Each of the Server objects
+    acts as a definition for a server which is used to spawn threads,
+    processes, or greenlets of each server.
+
+    :param templates: a list of service templates to apply to this service
+    :param config_mapper: default YAMLConfigMapper, configuration mapper for
+        the service
+    :param coordinator: default ThreadedServerCoordinator, the server
+        coordinator for the service
+    """
     logger = logger
 
     def __init__(self, templates=None, config_mapper=None, coordinator=None):
@@ -19,6 +30,12 @@ class Service(object):
         self._coordinator = coordinator or ThreadedServerCoordinator()
 
     def add_server(self, name, server_cls):
+        """Register a :class:`dploylib.servers.server.Server` to the Service
+        instance
+
+        :param name: name of the server
+        :param server_cls: A :class:`dploylib.servers.server.Server`
+        """
         self._server_config[name] = server_cls
 
     def _apply_templates(self):
@@ -33,7 +50,14 @@ class Service(object):
         return self._server_config
 
     def start(self, config_file=None, config_string=None, config_dict=None):
-        """Starts the service with a certain configuration data"""
+        """Starts the service with the given configuration information.
+        Configuration data is accepted from one of three different types: *a
+        file path*, *a string*, or *a dictionary*.
+
+        :param config_file: file path for the configuration
+        :param config_string: a string of the configuration
+        :param config_dict: a dictionary for the configuration
+        """
         if not (config_file or config_string or config_dict):
             raise TypeError('One of config_file, config_string or config_dict'
                     ' is required')
@@ -54,6 +78,7 @@ class Service(object):
         coordinator.start()
 
     def wait(self):
+        """Wait for the service forever or until it fails"""
         try:
             self._coordinator.wait()
         except ServerCoordinatorFailing:
@@ -61,5 +86,6 @@ class Service(object):
             raise ServiceFailing('Service has stopped working')
 
     def stop(self):
+        """Stop the service"""
         self._coordinator.stop()
         self.logger.debug('Service stopped.')
