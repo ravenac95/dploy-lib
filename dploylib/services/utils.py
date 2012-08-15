@@ -1,3 +1,13 @@
+# -*- coding: utf-8 -*-
+
+"""
+dploylib.services.utils
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Utilities for dploy services
+"""
+
+
 class ServerConfigError(Exception):
     pass
 

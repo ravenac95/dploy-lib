@@ -1,5 +1,14 @@
-import zmq
+# -*- coding: utf-8 -*-
+
+"""
+dploylib.transport.poll
+~~~~~~~~~~~~~~~~~~~~~~~
+
+This module defines the PollLoop
+"""
+
 import logging
+import zmq
 from .wrapper import Socket
 
 logger = logging.getLogger('dploylib.transport.poll')

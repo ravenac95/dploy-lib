@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """
 dploylib.services.config
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -51,6 +53,7 @@ Settings can also be bound to a server via ServerSettings::
     >>> print socket_info
     {'uri': 'some-uri', 'options': 'any-options-if-any'}
 """
+
 import yaml
 from .. import constants
 

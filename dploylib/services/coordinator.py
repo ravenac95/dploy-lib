@@ -1,3 +1,12 @@
+# -*- coding: utf-8 -*-
+
+"""
+dploylib.services.coordinator
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This module defines the ServerCoordinator.
+"""
+
 import threading
 import logging
 from dploylib.transport import Context
@@ -12,7 +21,7 @@ class ServerCoordinatorFailing(Exception):
 
 
 class ServerCoordinator(object):
-    """A generic ServerCoordinator meant to be subclassed. It does not do any
+    """A generic server coordinator meant to be subclassed. It does not do any
     of the spawning of servers on it's own.
 
     :param control_uri: default ``inproc://control``, the uri for the service
@@ -45,6 +54,9 @@ class ServerCoordinator(object):
         self._spawn_settings = spawn_settings
 
     def start_control_socket(self):
+        """Start the control socket. The control socket allows a coordinator to
+        stop any of it's controlled servers
+        """
         control_uri = self._control_uri
         self.logger.debug('Starting control socket @ "%s"' % control_uri)
         control_socket = self.context.socket('pub')
@@ -52,6 +64,7 @@ class ServerCoordinator(object):
         self._control_socket = control_socket
 
     def start(self):
+        """Start the servers that are controlled by the server coordinator"""
         self.logger.debug('Starting coordinator')
         spawns = self._spawns
         self.start_control_socket()
@@ -89,11 +102,19 @@ class ServerCoordinator(object):
 
     def start_server(self, server, name, server_settings, control_uri,
             **kwargs):
+        """Start a server. Meant to be used in a new thread, process or
+        greenlet
+        """
         new_server = server.new(name, server_settings, control_uri, **kwargs)
         new_server.start()
 
 
 class ThreadedServerCoordinator(ServerCoordinator):
+    """A :class:`ServerCoordinator` that uses threads to spawn servers
+
+    :param thread_poll_duration: Duration in seconds to wait for each server
+        during the wait method of the coordinator. Defaults to 0.5.
+    """
     spawner = threading.Thread
 
     def __init__(self, *args, **kwargs):

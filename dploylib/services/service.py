@@ -1,3 +1,12 @@
+# -*- coding: utf-8 -*-
+
+"""
+dploylib.services.service
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Defines the dploy service
+"""
+
 import logging
 from .utils import ServerConfig
 from .coordinator import *
