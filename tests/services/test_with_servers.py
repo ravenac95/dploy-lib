@@ -29,6 +29,17 @@ class EchoServer(servers.Server):
         socket.send_envelope(received.envelope)
 
 
+class EchoClassHandler(servers.Handler):
+    socket_type = 'rep'
+
+    def __call__(self, server, socket, received):
+        socket.send_envelope(received.envelope)
+
+
+class EchoClassServer(servers.Server):
+    echo_handler = EchoClassHandler.bind('request')
+
+
 class ServerProcess(ProcessWrapper):
     servers = []
 
@@ -53,6 +64,12 @@ class EchoServerProcess(ServerProcess):
     ]
 
 
+class EchoClassServerProcess(ServerProcess):
+    servers = [
+        ('echo', EchoClassServer),
+    ]
+
+
 class PubServer(servers.Server):
     out = servers.bind('out', 'pub')
 
@@ -70,6 +87,25 @@ class PubServerProcess(ServerProcess):
 @attr('large')
 class TestEchoServerSetup(MultiprocessTest):
     wrappers = [EchoServerProcess]
+
+    timeout = 2.0
+
+    def shared_options(self):
+        self.context = Context.new()
+        self.socket = self.context.socket('req')
+        self.socket.connect(ECHO_URI)
+        return dict(service_config=FAKE_CONFIG)
+
+    def test_echo(self):
+        for i in range(10):
+            random_message = random_string(20)
+            self.socket.send_text(random_message)
+            eq_(self.socket.receive_text(), random_message)
+
+
+@attr('large')
+class TestEchoClassServerSetup(MultiprocessTest):
+    wrappers = [EchoClassServerProcess]
 
     timeout = 2.0
 

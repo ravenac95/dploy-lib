@@ -5,6 +5,29 @@ from dploylib.transport import Context, PollLoop, ReceivedData
 logger = logging.getLogger('dploylib.servers.server')
 
 
+class Handler(object):
+    """Base class based handler"""
+    socket_type = None
+    deserializer = None
+
+    @classmethod
+    def bind(cls, name):
+        return cls.socket_description(name, 'bind')
+
+    @classmethod
+    def connect(cls, name):
+        return cls.socket_description(name, 'connect')
+
+    @classmethod
+    def socket_description(cls, name, setup_type):
+        handler = cls()
+        return SocketDescription(name, cls.socket_type, setup_type,
+                input_handler=handler, deserializer=cls.deserializer)
+
+    def __call__(self, server, socket, received):
+        raise NotImplementedError('Handler is not handling the input')
+
+
 def bind_in(name, socket_type, obj=None):
     """A decorator that creates a SocketDescription describing a socket bound
     to receive input. The decorated function or method is used as the input

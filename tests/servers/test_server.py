@@ -3,7 +3,7 @@ tests.servers.test_server
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 """
-from nose.tools import eq_, raises
+from nose.tools import eq_
 from mock import Mock, patch, ANY, call
 from dploylib.servers.server import *
 
@@ -137,6 +137,32 @@ class TestSocketHandlerWrapper(object):
 
         self.mock_handler.assert_called_with(self.mock_server,
                 mock_socket, mock_received_cls.return_value)
+
+
+class TestSocketHandlerWrapperWithHandler(object):
+    def setup(self):
+        self.mock_server = Mock()
+        self.mock_deserializer = Mock()
+
+        self.call_inspector = call_inspector = Mock()
+
+        class FakeHandler(Handler):
+            socket_type = 'rep'
+
+            def __call__(self, server, socket, received):
+                call_inspector(server, socket, received)
+
+        self.wrapper = SocketHandlerWrapper(self.mock_server,
+                FakeHandler(), deserializer=self.mock_deserializer)
+
+    @patch('dploylib.servers.server.ReceivedData')
+    def test_call(self, mock_received_cls):
+        mock_socket = Mock()
+
+        self.wrapper(mock_socket)
+
+        self.call_inspector.assert_called_with(self.mock_server, mock_socket,
+                mock_received_cls.return_value)
 
 
 class TestDployServer(object):
