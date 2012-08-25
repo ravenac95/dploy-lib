@@ -208,7 +208,7 @@ class DployServer(object):
             poll_loop=None):
         self._context = context
         self._name = name
-        self._settings = settings
+        self.settings = settings
         self._control_uri = control_uri
         self._control_socket = None
         self._poll_loop = poll_loop or PollLoop.new()
@@ -245,7 +245,7 @@ class DployServer(object):
 
     def add_socket_from_description(self, description):
         name = description.name
-        socket_info = self._settings.socket_info(name)
+        socket_info = self.settings.socket_info(name)
         uri = socket_info['uri']
         options = socket_info.get('options', [])
         socket = description.create_socket(self._context, uri, options)
