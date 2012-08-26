@@ -9,6 +9,7 @@ from dploylib.transport import *
 ECHO_URI = 'tcp://127.0.0.1:14445'
 PUB_IN_URI = 'tcp://127.0.0.1:14446'
 PUB_OUT_URI = 'tcp://127.0.0.1:14447'
+ROUTING_URI = 'tcp://127.0.0.1:14448'
 
 FAKE_CONFIG = {
     "servers": {
@@ -18,6 +19,9 @@ FAKE_CONFIG = {
         "broadcast": {
             "in": dict(uri=PUB_IN_URI),
             "out": dict(uri=PUB_OUT_URI),
+        },
+        "router": {
+            "request": dict(uri=ROUTING_URI),
         }
     },
 }
@@ -84,6 +88,18 @@ class PubServerProcess(ServerProcess):
     ]
 
 
+class RoutingServer(servers.Server):
+    @servers.bind_in('request', 'router')
+    def request_received(self, socket, received):
+        socket.send_envelope(received.envelope)
+
+
+class RoutingServerProcess(ServerProcess):
+    servers = [
+        ('router', RoutingServer),
+    ]
+
+
 @attr('large')
 class TestEchoServerSetup(MultiprocessTest):
     wrappers = [EchoServerProcess]
@@ -146,3 +162,22 @@ class TestPubServerSetup(MultiprocessTest):
             random_message = random_string(20)
             self.in_socket.send_text(random_message, id=self.random_id)
             eq_(self.out_socket.receive_text(), random_message)
+
+
+@attr('large')
+class TestRoutingServer(MultiprocessTest):
+    wrappers = [RoutingServerProcess]
+
+    timeout = 2.0
+
+    def shared_options(self):
+        self.context = Context.new()
+        self.socket = self.context.socket('req')
+        self.socket.connect(ROUTING_URI)
+        return dict(service_config=FAKE_CONFIG)
+
+    def test_echo(self):
+        for i in range(10):
+            random_message = random_string(20)
+            self.socket.send_text(random_message)
+            eq_(self.socket.receive_text(), random_message)
