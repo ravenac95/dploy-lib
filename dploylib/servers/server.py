@@ -173,6 +173,10 @@ class ServerDescription(object):
         descriptions_iter = self.iter_socket_descriptions()
         for local_name, description in descriptions_iter:
             real_server.add_socket_from_description(description)
+        server_setup = getattr(self, 'setup', None)
+        if server_setup:
+            server_setup_func = server_setup.im_func
+            real_server.add_setup(server_setup_func)
         return real_server
 
     def iter_socket_descriptions(self):
@@ -227,6 +231,9 @@ class DployServer(object):
         text = socket.receive_text()
         if text == constants.COORDINATOR_SHUTDOWN:
             raise ServerStopped()
+
+    def add_setup(self, setup_func):
+        setup_func(self)
 
     def start(self):
         """Run the poll loop for the server"""
