@@ -16,6 +16,10 @@ from .config import *
 logger = logging.getLogger('dploylib.services.service')
 
 
+class ServiceFailing(Exception):
+    pass
+
+
 class Service(object):
     """The Service object provides a way to create a zeromq-based dploy
     service. In dploy, a the service object is in charge of a combination of
