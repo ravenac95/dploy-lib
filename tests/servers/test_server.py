@@ -28,67 +28,21 @@ class GenericServerTest(object):
 
 class TestServerDescription(object):
     def setup(self):
-        self.description_patch = patch(
-                'dploylib.servers.server.SocketDescription',
-                autospec=True)
+        self.mock_server_cls = Mock()
 
-        self.mock_description_cls = self.description_patch.start()
+        self.server_description = ServerDescription(self.mock_server_cls)
 
-        from dploylib import servers
-
-        class FakeServerDescription(servers.Server):
-            def setup(self):
-                pass
-
-            @servers.bind_in('reply', 'rep')
-            def receive_request(self, socket, received):
-                socket.send_envelope(received.envelope)
-
-            @servers.bind_in('another', 'rep')
-            def another_request(self, socket, received):
-                socket.send_envelope(received.envelope)
-
-        self.server_description = FakeServerDescription()
-
-    def teardown(self):
-        self.description_patch.stop()
-
-    def test_iter_socket_descriptions(self):
-        expected_descriptions = [
-            ('receive_request', ANY),
-            ('another_request', ANY),
-        ]
-
-        iter_descs = self.server_description.iter_socket_descriptions()
-        descriptions = []
-        for name, description in iter_descs:
-            assert (name, description) in expected_descriptions
-            descriptions.append((name, description))
-
-        self.mock_description_cls.assert_has_calls([
-            call('reply', 'rep', 'bind', input_handler=ANY,
-                deserializer=None),
-            call('another', 'rep', 'bind', input_handler=ANY,
-                deserializer=None),
-        ])
-
-    @patch('dploylib.servers.server.DployServer', autospec=True)
-    def test_create_server(self, mock_dploy_server_cls):
+    def test_new(self):
         server_name = Mock()
         settings = Mock()
         control_uri = Mock()
         context = Mock()
 
-        server_description = self.server_description
-        mock_iter = server_description.iter_socket_description = Mock()
-        mock_iter.return_value = []
-
-        server_description.create_server(server_name, settings,
+        server = self.server_description.new(server_name, settings,
                 control_uri, context)
 
-        mock_dploy_server = mock_dploy_server_cls.new.return_value
-        mock_dploy_server.add_setup.assert_called_with(
-                server_description.setup.im_func)
+        mock_server = self.mock_server_cls.create.return_value
+        eq_(server, mock_server)
 
 
 class TestSocketDescription(object):

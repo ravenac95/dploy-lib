@@ -27,23 +27,6 @@ FAKE_CONFIG = {
 }
 
 
-class EchoServer(servers.Server):
-    @servers.bind_in('request', 'rep')
-    def echo_request(self, socket, received):
-        socket.send_envelope(received.envelope)
-
-
-class EchoClassHandler(servers.Handler):
-    socket_type = 'rep'
-
-    def __call__(self, server, socket, received):
-        socket.send_envelope(received.envelope)
-
-
-class EchoClassServer(servers.Server):
-    echo_handler = EchoClassHandler.bind('request')
-
-
 class ServerProcess(ProcessWrapper):
     servers = []
 
@@ -62,9 +45,43 @@ class ServerProcess(ProcessWrapper):
         self.service.stop()
 
 
+class EchoServer(servers.Server):
+    @servers.bind_in('request', 'rep')
+    def echo_request(self, socket, received):
+        socket.send_envelope(received.envelope)
+
+
+class EchoClassHandler(servers.Handler):
+    socket_type = 'rep'
+
+    def __call__(self, server, socket, received):
+        socket.send_envelope(received.envelope)
+
+
+class DoubleEchoServer(servers.Server):
+    @servers.bind_in('request', 'rep')
+    def double_echo(self, socket, received):
+        envelope = self.double(received.envelope)
+        socket.send_envelope(envelope)
+
+    def double(self, envelope):
+        data = envelope.data * 2
+        return Envelope(id=envelope.id, mimetype=envelope.mimetype, data=data)
+
+
+class EchoClassServer(servers.Server):
+    echo_handler = EchoClassHandler.bind('request')
+
+
 class EchoServerProcess(ServerProcess):
     servers = [
         ('echo', EchoServer),
+    ]
+
+
+class DoubleEchoServerProcess(ServerProcess):
+    servers = [
+        ('echo', DoubleEchoServer),
     ]
 
 
@@ -181,3 +198,22 @@ class TestRoutingServer(MultiprocessTest):
             random_message = random_string(20)
             self.socket.send_text(random_message)
             eq_(self.socket.receive_text(), random_message)
+
+
+@attr('large')
+class TestDoubleEchoServer(MultiprocessTest):
+    wrappers = [DoubleEchoServerProcess]
+
+    timeout = 2.0
+
+    def shared_options(self):
+        self.context = Context.new()
+        self.socket = self.context.socket('req')
+        self.socket.connect(ECHO_URI)
+        return dict(service_config=FAKE_CONFIG)
+
+    def test_echo(self):
+        for i in range(10):
+            random_message = random_string(20)
+            self.socket.send_text(random_message)
+            eq_(self.socket.receive_text(), random_message * 2)

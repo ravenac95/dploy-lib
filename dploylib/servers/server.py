@@ -150,63 +150,38 @@ class SocketDescription(object):
                 self._deserializer)
 
 
-class ServerDescription(object):
-    """Provides the socket description of a :class:`DployServer`"""
-    @classmethod
-    def new(cls, name, settings, control_uri, context=None):
-        server_description = cls()
-        server = server_description.create_server(name, settings, control_uri,
-                context)
-        return server
-
-    def create_server(self, server_name, settings, control_uri, context):
-        """Creates the actual server instance using :class:`DployServer`
-
-        :param server_name: The name of the server
-        :param settings: A settings object for a particular server
-        :param control_uri: A URI to the socket that controls this server
-        :param context: The :class:`~dploylib.transport.Context` for this
-            server
-        """
-        real_server = DployServer.new(server_name, settings, control_uri,
-                context)
-        descriptions_iter = self.iter_socket_descriptions()
-        for local_name, description in descriptions_iter:
-            real_server.add_socket_from_description(description)
-        server_setup = getattr(self, 'setup', None)
-        if server_setup:
-            server_setup_func = server_setup.im_func
-            real_server.add_setup(server_setup_func)
-        return real_server
-
-    def iter_socket_descriptions(self):
-        """Iterate through all the socket descriptions on this
-        ServerDescription
-
-        :returns: An iterator of ([name], [socket_description])
-        """
-        class_iteritems = self.__class__.__dict__.iteritems()
+class ServerMeta(type):
+    def __init__(cls, name, bases, dct):
         socket_descriptions = []
-        for name, value in class_iteritems:
-            if hasattr(value, 'create_socket'):
+        for name, value in dct.iteritems():
+            if hasattr(value, 'create_socket') and hasattr(value, 'handler'):
                 socket_descriptions.append((name, value))
-        return socket_descriptions
+        cls.socket_descriptions = socket_descriptions
+        super(ServerMeta, cls).__init__(name, bases, dct)
+
+
+class ServerDescription(object):
+    def __init__(self, server_cls):
+        self._server_cls = server_cls
+        self.socket_descriptions = []
+
+    def new(self, name, settings, control_uri, context=None):
+        # Setup the server class and all it's defined sockets
+        server = self._server_cls.create(name, settings, control_uri,
+                context=context)
+        # Setup any of the sockets defined through the description
+        for name, description in self.socket_descriptions:
+            server.add_socket_from_description(description)
+        return server
 
 
 # Use Server description as a facade
-Server = ServerDescription
+#Server = ServerDescription
 
 
 class DployServer(object):
     """The actual server behind the scenes"""
     logger = logger
-
-    @classmethod
-    def new(cls, name, settings, control_uri, context=None):
-        context = context or Context.new()
-        server = cls(name, settings, control_uri, context)
-        server.connect_to_control()
-        return server
 
     def __init__(self, name, settings, control_uri, context,
             poll_loop=None):
@@ -274,3 +249,40 @@ class SocketStorage(object):
 
     def __getattr__(self, name):
         return self._storage[name]
+
+
+class Server(DployServer):
+    __metaclass__ = ServerMeta
+    logger = logger
+
+    def __new__(cls):
+        """Allow for deferred setup of the server. This allows for flask like
+        definition of sockets"""
+        return ServerDescription(cls)
+
+    @classmethod
+    def new(cls, *args, **kwargs):
+        description = cls()
+        return description.new(*args, **kwargs)
+
+    @classmethod
+    def create(cls, name, settings, control_uri, context=None):
+        context = context or Context.new()
+        server = cls.initialize(name, settings, control_uri, context)
+        server.connect_to_control()
+        server.setup_sockets()
+        server.setup()
+        return server
+
+    @classmethod
+    def initialize(cls, *args, **kwargs):
+        server = object.__new__(cls)
+        server.__init__(*args, **kwargs)
+        return server
+
+    def setup_sockets(self):
+        for name, description in self.socket_descriptions:
+            self.add_socket_from_description(description)
+
+    def setup(self):
+        pass
